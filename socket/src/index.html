@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Le complice</title>
+    <link href="style.css" rel="stylesheet">
+    <style> 
+    
+    </style>
+</head>
+<body>
+    <h1 class="titre">Le complice</h1>
+
+    <h1>Veuillez vous connecter</h1>
+    <input placeholder="pseudo" class="textPseudo">
+    <button type="boutonPseudo" id="boutonPseudo">Valider le pseudo</button>
+
+    <h1 id="yourName">Tu n'as pas encore de nom</h1>
+    <!-- <button type="submit" id="submit">Envoyer un message</button> -->
+
+    <!-- liste vide -->
+    <h2 id="yourWord">Tu n'as pas encore de mot</h2>
+
+
+    <ul>
+
+    </ul>
+
+
+    
+
+    <button type="startGameButton" id="startGameButton">Commencer la partie</button>
+
+    <!-- chat ici -->
+    <h2>Le chat du jeu :</h2>
+
+    <div class="chatBox">
+    <ul id="chat">
+    
+    </ul>
+    </div>
+
+    <p id="composer">Ecrit tes mots ici : </p>
+
+    <h2 id="voteBox">Vote en dessous :</h2>
+
+    <script src="socket.io/socket.io.js"></script>
+
+
+
+    <script>
+        //initialisation du nom
+        let hasAName = false;
+        let yourName = "aucun";
+        const socket = io();
+
+        //init de la liste
+        let listOfUsersClient = [];
+        let voteList = [];
+
+        socket.on("connect", () => {
+        console.log(socket.id);
+
+        //envoyer son pseudo pour le site
+        let submit = document.getElementById("boutonPseudo");
+        submit.addEventListener("click", () => {
+            
+            const name = document.querySelector('.textPseudo').value;
+            //change localement le pseudo
+            yourName = name;
+            document.querySelector('h1').innerHTML = "Tu te nommes : " + yourName;
+            hasAName = true;
+
+            //enlever le bouton
+            document.getElementById("boutonPseudo").remove();
+
+            //envoyer la requete au serveur
+            socket.emit('pseudoNewUser', name);
+            document.querySelector('.textPseudo').innerHTML = "";
+        });
+
+
+        let startGame = document.getElementById("startGameButton");
+        startGame.addEventListener("click", () => {
+                socket.emit("startGame", yourName)
+        });
+        socket.on("server", msg => {
+            console.log("Petit message de la part du serveur : " + msg)
+        });
+
+        // reception d'une liste d'utilisateurs et update de la liste ul
+        socket.on("updatedUserList", listOfUsers => {
+            console.log(listOfUsers);
+            document.querySelector('ul').innerHTML = "";
+            for (user in listOfUsers) {
+
+                const el = document.createElement('li');
+                el.innerHTML = listOfUsers[user];
+                document.querySelector('ul').appendChild(el);
+            }
+            listOfUsersClient = listOfUsers
+                
+        });
+
+        //reception du mot
+        socket.on("newWord", wordMsg => {
+            const wordSplitted = wordMsg.split("|");
+            console.log(wordSplitted);
+            console.log(yourName + "c'est bien ton nom ?")
+            if (wordSplitted[0] == yourName) {
+                console.log("ton mot va t'etre attribué")
+                document.getElementById("yourWord").innerHTML = `Ton mot est ${wordSplitted[1]}`;
+            } else {
+                console.log("ton mot ne va pas t'etre attribué")
+            }
+        })
+
+        //Veuillez donner un mot
+        socket.on("compose", psg => {
+            //vider la liste des joueurs votés au tour d'avant
+            voteList = [];
+
+            const placeHolder = document.createElement('input');
+                placeHolder.innerHTML = "Ecris ton mot ici";
+                placeHolder.id = 'composeText';
+                document.getElementById('composer').appendChild(placeHolder);
+            const para = document.createElement("button");
+                para.innerHTML = "Valide ton mot ici";
+                para.id = 'composeButton';
+                document.getElementById('composer').appendChild(para);
+
+            //cliquer sur le bouton du mot envooie le mot au serveur
+            let composito = document.getElementById("composeButton");
+            composito.addEventListener("click", () => {
+                let wordComposed = document.getElementById('composeText').value;
+                let composition = yourName + "|" + wordComposed;
+                console.log(composition)
+                socket.emit("Composed", composition);
+
+                //enelver le bouton et le placeholder
+                document.getElementById("composeText").remove();
+                document.getElementById("composeButton").remove();
+        });
+        
+
+        });
+
+        //Phase de vote
+        socket.on("Vote", wordsComposed => {
+            console.log(wordsComposed);
+            //faire apparraitre le chat
+            for (word in wordsComposed) {
+
+                const chatText = document.createElement('li');
+                chatText.innerHTML = wordsComposed[word];
+                document.getElementById('chat').appendChild(chatText);
+            }
+            //apparition de l'innterface de vote
+            for (user in listOfUsersClient) {
+
+                //créer une case cochable
+                const checkBox = document.createElement('input');
+                checkBox.type = 'checkBox';
+                checkBox.id = listOfUsersClient[user];
+
+                //création du label à coté de la case
+                const label = document.createElement('label');
+                label.innerHTML = listOfUsersClient[user];
+                label.for = listOfUsersClient[user];
+                label.id = listOfUsersClient[user];
+
+
+                //création du retour à la ligne
+                const br = document.createElement('br');
+
+                //création des trois éléments
+                document.getElementById('voteBox').appendChild(br);
+                document.getElementById('voteBox').appendChild(checkBox);
+                document.getElementById('voteBox').appendChild(label);
+            }
+            const confirmVote = document.createElement("button");
+                confirmVote.innerHTML = "confirmer le vote";
+                confirmVote.id = 'confirmVoteButton';
+                document.getElementById('voteBox').appendChild(confirmVote);
+            //interactions avec les cases
+            for (checkBoxes in listOfUsersClient) {
+
+                let newBox = document.getElementById(listOfUsersClient[checkBoxes]);
+                
+                newBox.addEventListener("click", () => {
+                    console.log("Tu as cliqué sur le bouton : " + newBox.id);
+                    
+                    if (voteList.includes(newBox.id)) {
+                        console.log("case décochée");
+                        let index = voteList.indexOf(newBox.id);
+                        voteList.splice(index, 1);
+                        console.log(index + "retiré");
+                        console.log("ma liste de votes : " + voteList);
+
+                    } else if (voteList.length == 2){
+                        console.log("tu as déjà voté pour 2 complices")
+                        newBox.checked = false;
+                    } else {
+                        voteList.push(newBox.id);
+                        console.log("ma liste de votes : " + voteList);
+                    }
+                
+
+                });
+
+                //bouton de confirmation des votes
+                
+                    
+            }
+            let confirmVoteButton = document.getElementById('confirmVoteButton');
+
+                    confirmVoteButton.addEventListener("click", () => {
+                        if (voteList.length == 2) {
+                        socket.emit("voteConfirmed", voteList)
+                        console.log("votre vote a bien été prit en compte")
+
+                        document.getElementById("confirmVoteButton").remove();
+                        for (user in listOfUsersClient) {
+                            document.getElementById(listOfUsersClient[user]).remove();
+                            document.getElementById(listOfUsersClient[user]).remove();
+                        }
+
+                        } else {
+                        
+                        }
+                    });
+        socket.on("gameEnded", msg => {
+            const winText = document.createElement('h1');
+            winText.innerHTML = "Fin de partie";
+            document.getElementById('voteBox').appendChild(winText);
+        }
+        )
+            // for (checkBoxes in listOfUsersClient) {
+
+            //     let newBox = document.getElementById(listOfUsersClient[checkBoxes]);
+            //     newBox.addEventListener("click", () => {
+            //         console.log("bouton de vote cliqué");
+            //     if (newBox.checked = true) {
+            //         if (voteList.length == 2) {
+            //             console.log("liste de vote pleine")
+            //             newBox.checked = false;
+            //         } else {
+            //         voteList.push(newBox.id);
+            //         console.log("ma liste de votes : " + voteList)
+            //         }
+            //     } else if (newBox.checked = false){
+            //         console.log("case décochée")
+            //         let index = voteList.indexOf(newBox);
+            //         if (index !== -1) {
+            //             voteList.splice(index, 1);
+            //             }
+            //     };
+            //     });
+            //     }
+
+            });
+        
+        });
+        
+            // socket.on("updatedUserList", listOfUsers => {
+            // console.log(listOfUsers);
+            // document.querySelector('ul').innerHTML = "";
+            // for (user in listOfUsers) {
+
+            //     const el = document.createElement('li');
+            //     el.innerHTML = listOfUsers[user];
+            //     document.querySelector('ul').appendChild(el);
+            // }
+       
+        
+
+    </script>
+</body>
+</html>

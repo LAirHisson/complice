@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Socket io</title>
+</head>
+<body>
+    <h1 id="titre">Le complice</h1>
+    
+    <h1>Veuillez vous connecter</h1>
+    <input placeholder="pseudo" class="textPseudo">
+    <button type="boutonPseudo" id="boutonPseudo">Valider le pseudo</button>
+
+    <!-- liste vide -->
+    <ul>
+
+    </ul>
+
+    <script src="socket.io/socket.io.js"></script>
+    <script>
+
+        const socket = io();
+
+        socket.on("connect", () => {
+        console.log(socket.id);
+        
+        let submit = document.getElementById("boutonPseudo");
+        submit.addEventListener("click", () => {
+            const name = document.querySelector('.textPseudo').value
+            socket.emit('pseudoNewUser', name);
+        })
+
+
+        // reception d'une liste d'utilisateurs et update de la liste ul
+        // socket.on("updatedUserList", listOfUsers => {
+        //     console.log(listOfUsers);
+        //     for (user in listOfUsers) {
+        //         const el = document.createElement('li');
+        //         el.innerHTML = user;
+        //         document.querySelector('ul').appendChild(el)
+        //     }
+                
+            });
+    </script>
+</body>
+</html>
