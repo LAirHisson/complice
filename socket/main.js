@@ -1,13 +1,14 @@
 const { on } = require('events');
 const express = require('express');
-const server  = http.createServer
+
 const app = express();
 const path = require('path');
 const cors = require('cors')
 
+//hhtp port et tout ça
 const http = require('http').Server(app);
 const port = process.env.PORT || 10000;
-
+const server  = http.createServer
 //serveur http attaché
 const io = require('socket.io')(http);
 
