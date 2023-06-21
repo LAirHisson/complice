@@ -4,7 +4,7 @@ const app = express();
 const path = require('path');
 
 const http = require('http').Server(app);
-const port = process.env.PORT || 8080;
+const port = process.env.PORT || 10000;
 
 //serveur http attaché
 const io = require('socket.io')(http);
