@@ -1,7 +1,9 @@
 const { on } = require('events');
 const express = require('express');
+const server  = http.createServer
 const app = express();
 const path = require('path');
+const cors = require('cors')
 
 const http = require('http').Server(app);
 const port = process.env.PORT || 10000;
